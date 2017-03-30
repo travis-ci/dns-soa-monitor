@@ -52,32 +52,46 @@ func metricsify(s string) string {
 	return strings.Replace(s, ".", "_", -1)
 }
 
-func runMonitor(hostname, primaryServer string, secondaryServers []string) {
+func runMonitor(hostname string, primaryServers, secondaryServers []string) {
 	for {
 		log.Printf("polling %s", hostname)
 
-		primarySerial, err := getSerial(hostname, primaryServer)
-		if err != nil {
-			log.Printf("error getting primary serial for %v: %v\n", hostname, err)
-			continue
+		maxSerial := uint32(0)
+		maxSerialPrimaryServer := ""
+
+		for _, primaryServer := range primaryServers {
+			primarySerial, err := getSerial(hostname, primaryServer)
+			if err != nil {
+				log.Printf("error getting primary serial for %v on %v: %v\n", hostname, primaryServer, err)
+				continue
+			}
+
+			if primarySerial > maxSerial {
+				maxSerial = primarySerial
+				maxSerialPrimaryServer = primaryServer
+			}
 		}
 
-		for _, secondaryServer := range secondaryServers {
+		targetServers := []string{}
+		targetServers = append(targetServers, primaryServers...)
+		targetServers = append(targetServers, secondaryServers...)
+
+		for _, secondaryServer := range targetServers {
 			secondarySerial, err := getSerial(hostname, secondaryServer)
 			if err != nil {
 				log.Printf("error: %v\n", err)
 				continue
 			}
 
-			lagSeconds := int64(primarySerial) - int64(secondarySerial)
+			lagSeconds := int64(maxSerial) - int64(secondarySerial)
 
 			if debug {
 				log.Printf("hostname=%v primary_server=%v primary_serial=%v secondary_server=%v secondary_serial=%v lag_seconds=%v",
-					hostname, primaryServer, primarySerial, secondaryServer, secondarySerial, lagSeconds)
+					hostname, maxSerialPrimaryServer, maxSerial, secondaryServer, secondarySerial, lagSeconds)
 			}
 
 			if m != nil {
-				g := m.GetGauge(fmt.Sprintf("travis.dns-soa-monitor.%s.primary.%s.secondary.%s.lag_seconds", metricsify(hostname), metricsify(primaryServer), metricsify(secondaryServer)))
+				g := m.GetGauge(fmt.Sprintf("travis.dns-soa-monitor.%s.primary.%s.secondary.%s.lag_seconds", metricsify(hostname), metricsify(maxSerialPrimaryServer), metricsify(secondaryServer)))
 				g <- int64(lagSeconds)
 			}
 		}
@@ -92,9 +106,9 @@ func main() {
 		log.Fatal("please provide the HOSTNAMES env variable")
 	}
 
-	primaryServer := os.Getenv("PRIMARY_SERVER")
-	if primaryServer == "" {
-		log.Fatal("please provide the PRIMARY_SERVER env variable")
+	primaryServers := strings.Split(os.Getenv("PRIMARY_SERVERS"), ",")
+	if len(primaryServers) == 0 {
+		log.Fatal("please provide the PRIMARY_SERVERS env variable")
 	}
 
 	secondaryServers := strings.Split(os.Getenv("SECONDARY_SERVERS"), ",")
@@ -139,7 +153,7 @@ func main() {
 	debug = os.Getenv("DEBUG") == "true"
 
 	for _, hostname := range hostnames {
-		go runMonitor(hostname, primaryServer, secondaryServers)
+		go runMonitor(hostname, primaryServers, secondaryServers)
 	}
 
 	exitSignal := make(chan os.Signal)

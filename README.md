@@ -15,13 +15,13 @@ axfr.dnsimple.com. admin.dnsimple.com. 1430416861 86400 7200 604800 300
 ## Settings
 
 * `HOSTNAMES` - a comma-separated list of host names to monitor, e.g. `travis-ci.org,travis-ci.com`.
-* `PRIMARY_SERVER` - the hostname of the primary server. e.g. `ns1.dnsimple.com`.
+* `PRIMARY_SERVERS` - a comma-separated list of primary servers. Monitor will pick the highest serial and compare the other primaries against it. e.g. `ns1.dnsimple.com,ns2.dnsimple.com,ns3.dnsimple.com,ns4.dnsimple.com`.
 * `SECONDARY_SERVERS` - a comma-separated list of secondary servers to monitor. e.g. `ns5.dnsmadeeasy.com,ns6.dnsmadeeasy.com,ns7.dnsmadeeasy.com`.
 * `POLL_INTERVAL` - the number of seconds to wait in between polls. Defaults to `60` seconds.
 * `LIBRATO_USER` - (optional) the librato user, usually looks like an email address.
 * `LIBRATO_TOKEN` - (optional) the librato token.
 * `LIBRATO_SOURCE` - (optional) the librato source. If none is provided, it will attempt to use the `DYNO` env var. If that is empty, it will use the hostname of the machine running the monitor.
-* `DEBUG` - (optional) Set to `true` to get more verbose debug logging. Defaults to `false`.
+* `DEBUG` - (optional) set to `true` to get more verbose debug logging. Defaults to `false`.
 
 ## Install
 
