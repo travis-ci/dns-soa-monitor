@@ -72,6 +72,11 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 			}
 		}
 
+		if maxSerialPrimaryServer == "" {
+			log.Printf("error: no primary server responded for %v\n", domainName)
+			continue
+		}
+
 		targetServers := []string{}
 		targetServers = append(targetServers, primaryServers...)
 		targetServers = append(targetServers, secondaryServers...)
