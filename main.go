@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	raven "github.com/getsentry/raven-go"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	librato "github.com/rcrowley/go-librato"
@@ -75,6 +76,12 @@ func metricsify(s string) string {
 	return strings.Replace(s, ".", "_", -1)
 }
 
+func processError(err error) {
+	log.Printf("error: %v", err)
+	atomic.AddUint64(&errorCount, 1)
+	raven.CaptureErrorAndWait(err, nil)
+}
+
 func runDomainMonitor(domainName string, primaryServers, secondaryServers []string) {
 	for {
 		log.Printf("polling %s", domainName)
@@ -85,8 +92,8 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 		for _, primaryServer := range primaryServers {
 			primarySerial, err := getSerial(domainName, primaryServer)
 			if err != nil {
-				log.Printf("error getting primary serial for %v on %v: %v\n", domainName, primaryServer, err)
-				atomic.AddUint64(&errorCount, 1)
+				err = errors.Wrapf(err, "could not get primary serial for %v on %v: %v", domainName, primaryServer)
+				processError(err)
 				continue
 			}
 
@@ -97,8 +104,8 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 		}
 
 		if maxSerialPrimaryServer == "" {
-			log.Printf("error: no primary server responded for %v\n", domainName)
-			atomic.AddUint64(&errorCount, 1)
+			err := errors.Errorf("no primary server responded for %v", domainName)
+			processError(err)
 			continue
 		}
 
@@ -109,8 +116,7 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 		for _, secondaryServer := range targetServers {
 			secondarySerial, err := getSerial(domainName, secondaryServer)
 			if err != nil {
-				log.Printf("error: %v\n", err)
-				atomic.AddUint64(&errorCount, 1)
+				processError(err)
 				continue
 			}
 
@@ -179,6 +185,18 @@ func main() {
 		defer m.Close()
 	} else {
 		log.Print("no librato config provided, to enable librato, please provide LIBRATO_USER and LIBRATO_TOKEN")
+	}
+
+	if os.Getenv("SENRTY_DSN") != "" {
+		err := raven.SetDSN(os.Getenv("SENRTY_DSN"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// TODO: raven.SetRelease(VersionString)
+		if os.Getenv("SENRTY_ENVIRONMENT") != "" {
+			raven.SetEnvironment(os.Getenv("SENRTY_ENVIRONMENT"))
+		}
 	}
 
 	debug = os.Getenv("DEBUG") == "true"

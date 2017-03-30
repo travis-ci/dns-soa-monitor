@@ -21,6 +21,8 @@ axfr.dnsimple.com. admin.dnsimple.com. 1430416861 86400 7200 604800 300
 * `LIBRATO_USER` - (optional) the librato user, usually looks like an email address.
 * `LIBRATO_TOKEN` - (optional) the librato token.
 * `LIBRATO_SOURCE` - (optional) the librato source. If none is provided, it will attempt to use the `DYNO` env var. If that is empty, it will use the hostname of the machine running the monitor.
+* `SENRTY_DSN` - (optional) DSN to report errors to sentry.
+* `SENRTY_ENVIRONMENT` - (optional) environment to include in sentry errors.
 * `DEBUG` - (optional) set to `true` to get more verbose debug logging. Defaults to `false`.
 
 ## Install
