@@ -1,4 +1,4 @@
-# travis-ci/dns-soa-monitor
+# travis-ci/dns-soa-monitor [![Build Status](https://travis-ci.org/travis-ci/dns-soa-monitor.svg?branch=master)](https://travis-ci.org/travis-ci/dns-soa-monitor)
 
 A mini monitor to keep track of dns zone transfer (replication) lag by comparing the serial of the SOA records.
 
