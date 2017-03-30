@@ -102,17 +102,17 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 
 func main() {
 	domainNames := strings.Split(os.Getenv("DOMAIN_NAMES"), ",")
-	if len(domainNames) == 0 {
+	if os.Getenv("DOMAIN_NAMES") == "" {
 		log.Fatal("please provide the DOMAIN_NAMES env variable")
 	}
 
 	primaryServers := strings.Split(os.Getenv("PRIMARY_SERVERS"), ",")
-	if len(primaryServers) == 0 {
+	if os.Getenv("PRIMARY_SERVERS") == "" {
 		log.Fatal("please provide the PRIMARY_SERVERS env variable")
 	}
 
 	secondaryServers := strings.Split(os.Getenv("SECONDARY_SERVERS"), ",")
-	if len(secondaryServers) == 0 {
+	if os.Getenv("SECONDARY_SERVERS") == "" {
 		log.Fatal("please provide the SECONDARY_SERVERS env variable")
 	}
 
