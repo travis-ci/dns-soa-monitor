@@ -1,0 +1,29 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/miekg/dns",
+			"repository": "https://github.com/miekg/dns",
+			"vcs": "git",
+			"revision": "767422ac12884e2baed0afd7303cf06cff90fef6",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/pkg/errors",
+			"repository": "https://github.com/pkg/errors",
+			"vcs": "git",
+			"revision": "ff09b135c25aae272398c51a07235b90a75aa4f0",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/rcrowley/go-librato",
+			"repository": "https://github.com/rcrowley/go-librato",
+			"vcs": "git",
+			"revision": "a17ea15e933f52d83d7d38ac16153fe33e34f1f0",
+			"branch": "master",
+			"notests": true
+		}
+	]
+}

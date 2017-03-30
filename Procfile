@@ -1,0 +1,1 @@
+monitor: dns-soa-monitor
