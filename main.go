@@ -201,10 +201,14 @@ func main() {
 
 	debug = os.Getenv("DEBUG") == "true"
 
-	go runErrorCountReporter()
+	go raven.CapturePanicAndWait(runErrorCountReporter, nil)
 
 	for _, domainName := range domainNames {
-		go runDomainMonitor(domainName, primaryServers, secondaryServers)
+		go func(domainName string, primaryServers, secondaryServers []string) {
+			raven.CapturePanicAndWait(func() {
+				runDomainMonitor(domainName, primaryServers, secondaryServers)
+			}, nil)
+		}(domainName, primaryServers, secondaryServers)
 	}
 
 	exitSignal := make(chan os.Signal)
