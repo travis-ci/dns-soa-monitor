@@ -12,6 +12,8 @@ axfr.dnsimple.com. admin.dnsimple.com. 1430416865 86400 7200 604800 300
 axfr.dnsimple.com. admin.dnsimple.com. 1430416861 86400 7200 604800 300
 ```
 
+Please note that the reported numbers will be weird, and may appear to have negative replication lag, this is because DNS is Eventually Consistent™. That said, it should be good enough to give a general idea within the bounds of a few minutes.
+
 ## Settings
 
 * `DOMAIN_NAMES` - a comma-separated list of domain names to monitor, e.g. `travis-ci.org,travis-ci.com`.
