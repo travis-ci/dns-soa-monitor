@@ -69,7 +69,7 @@ func runMonitor(hostname, primaryServer string, secondaryServers []string) {
 				continue
 			}
 
-			lagSeconds := primarySerial - secondarySerial
+			lagSeconds := int64(primarySerial) - int64(secondarySerial)
 
 			if debug {
 				log.Printf("hostname=%v primary_server=%v primary_serial=%v secondary_server=%v secondary_serial=%v lag_seconds=%v",
