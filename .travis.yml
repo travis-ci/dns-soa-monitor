@@ -4,6 +4,7 @@ dist: trusty
 
 install:
 - go get github.com/FiloSottile/gvt
+- gvt restore
 
 script:
 - go build -o dns-soa-monitor
