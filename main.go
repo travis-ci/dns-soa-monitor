@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -19,7 +20,23 @@ var (
 	pollInterval = 60
 	m            librato.Metrics
 	debug        = false
+	errorCount   = uint64(0)
 )
+
+func runErrorCountReporter() {
+	if m != nil {
+		for {
+			count := atomic.LoadUint64(&errorCount)
+
+			if m != nil {
+				c := m.GetCounter(fmt.Sprintf("travis.dns-soa-monitor.errors"))
+				c <- int64(count)
+			}
+
+			time.Sleep(time.Duration(pollInterval) * time.Second)
+		}
+	}
+}
 
 func getSerial(domainName, server string) (uint32, error) {
 	m := new(dns.Msg)
@@ -63,6 +80,7 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 			primarySerial, err := getSerial(domainName, primaryServer)
 			if err != nil {
 				log.Printf("error getting primary serial for %v on %v: %v\n", domainName, primaryServer, err)
+				atomic.AddUint64(&errorCount, 1)
 				continue
 			}
 
@@ -74,6 +92,7 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 
 		if maxSerialPrimaryServer == "" {
 			log.Printf("error: no primary server responded for %v\n", domainName)
+			atomic.AddUint64(&errorCount, 1)
 			continue
 		}
 
@@ -85,6 +104,7 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 			secondarySerial, err := getSerial(domainName, secondaryServer)
 			if err != nil {
 				log.Printf("error: %v\n", err)
+				atomic.AddUint64(&errorCount, 1)
 				continue
 			}
 
@@ -156,6 +176,8 @@ func main() {
 	}
 
 	debug = os.Getenv("DEBUG") == "true"
+
+	go runErrorCountReporter()
 
 	for _, domainName := range domainNames {
 		go runDomainMonitor(domainName, primaryServers, secondaryServers)
