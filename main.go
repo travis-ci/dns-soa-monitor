@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -72,6 +73,32 @@ func getSerial(domainName, server string) (uint32, error) {
 	return 0, errors.New("no soa record returned")
 }
 
+func getSerials(domainName string, targetServers []string, errs chan<- error) map[string]uint32 {
+	serials := make(map[string]uint32)
+	var mutex sync.Mutex
+
+	var wg sync.WaitGroup
+	for _, server := range targetServers {
+		wg.Add(1)
+		go func(server string) {
+			defer wg.Done()
+			serial, err := getSerial(domainName, server)
+			if err != nil {
+				processError(err)
+				return
+			}
+			mutex.Lock()
+			serials[server] = serial
+			mutex.Unlock()
+		}(server)
+	}
+	wg.Wait()
+
+	close(errs)
+
+	return serials
+}
+
 func metricsify(s string) string {
 	return strings.Replace(s, ".", "_", -1)
 }
@@ -86,14 +113,25 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 	for {
 		log.Printf("polling %s", domainName)
 
+		targetServers := []string{}
+		targetServers = append(targetServers, primaryServers...)
+		targetServers = append(targetServers, secondaryServers...)
+
+		errs := make(chan error)
+		go func() {
+			for err := range errs {
+				processError(err)
+			}
+		}()
+
+		serials := getSerials(domainName, targetServers, errs)
+
 		maxSerial := uint32(0)
 		maxSerialPrimaryServer := ""
 
 		for _, primaryServer := range primaryServers {
-			primarySerial, err := getSerial(domainName, primaryServer)
-			if err != nil {
-				err = errors.Wrapf(err, "could not get primary serial for %v on %v: %v", domainName, primaryServer)
-				processError(err)
+			primarySerial, ok := serials[primaryServer]
+			if !ok {
 				continue
 			}
 
@@ -109,14 +147,9 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 			continue
 		}
 
-		targetServers := []string{}
-		targetServers = append(targetServers, primaryServers...)
-		targetServers = append(targetServers, secondaryServers...)
-
 		for _, secondaryServer := range targetServers {
-			secondarySerial, err := getSerial(domainName, secondaryServer)
-			if err != nil {
-				processError(err)
+			secondarySerial, ok := serials[secondaryServer]
+			if !ok {
 				continue
 			}
 
