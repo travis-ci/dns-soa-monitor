@@ -14,7 +14,7 @@ axfr.dnsimple.com. admin.dnsimple.com. 1430416861 86400 7200 604800 300
 
 ## Settings
 
-* `HOSTNAMES` - a comma-separated list of host names to monitor, e.g. `travis-ci.org,travis-ci.com`.
+* `DOMAIN_NAMES` - a comma-separated list of domain names to monitor, e.g. `travis-ci.org,travis-ci.com`.
 * `PRIMARY_SERVERS` - a comma-separated list of primary servers. Monitor will pick the highest serial and compare the other primaries against it. e.g. `ns1.dnsimple.com,ns2.dnsimple.com,ns3.dnsimple.com,ns4.dnsimple.com`.
 * `SECONDARY_SERVERS` - a comma-separated list of secondary servers to monitor. e.g. `ns5.dnsmadeeasy.com,ns6.dnsmadeeasy.com,ns7.dnsmadeeasy.com`.
 * `POLL_INTERVAL` - the number of seconds to wait in between polls. Defaults to `60` seconds.
