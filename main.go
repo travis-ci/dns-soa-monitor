@@ -24,17 +24,23 @@ var (
 )
 
 func runErrorCountReporter() {
-	if m != nil {
-		for {
-			count := atomic.LoadUint64(&errorCount)
+	if m == nil && !debug {
+		return
+	}
 
-			if m != nil {
-				c := m.GetCounter(fmt.Sprintf("travis.dns-soa-monitor.errors"))
-				c <- int64(count)
-			}
+	for {
+		count := atomic.LoadUint64(&errorCount)
 
-			time.Sleep(time.Duration(pollInterval) * time.Second)
+		if m != nil {
+			c := m.GetCounter(fmt.Sprintf("travis.dns-soa-monitor.errors"))
+			c <- int64(count)
 		}
+
+		if debug {
+			log.Printf("error_count=%v", errorCount)
+		}
+
+		time.Sleep(time.Duration(pollInterval) * time.Second)
 	}
 }
 
