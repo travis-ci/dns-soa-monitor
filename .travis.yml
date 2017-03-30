@@ -1,0 +1,9 @@
+language: go
+go: 1.8.x
+dist: trusty
+
+install:
+- go get github.com/FiloSottile/gvt
+
+script:
+- go build -o dns-soa-monitor
