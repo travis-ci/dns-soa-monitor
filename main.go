@@ -148,6 +148,8 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 			continue
 		}
 
+		maxLagSeconds := int64(0)
+
 		for _, secondaryServer := range targetServers {
 			secondarySerial, ok := serials[secondaryServer]
 			if !ok {
@@ -165,6 +167,19 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 				g := m.GetGauge(fmt.Sprintf("travis.dns-soa-monitor.%s.primary.%s.secondary.%s.lag_seconds", metricsify(domainName), metricsify(maxSerialPrimaryServer), metricsify(secondaryServer)))
 				g <- int64(lagSeconds)
 			}
+
+			if lagSeconds > maxLagSeconds {
+				maxLagSeconds = lagSeconds
+			}
+		}
+
+		if debug {
+			log.Printf("domain_name=%v max_lag_seconds=%v", domainName, maxLagSeconds)
+		}
+
+		if m != nil {
+			g := m.GetGauge(fmt.Sprintf("travis.dns-soa-monitor.%s.max_lag_seconds", metricsify(domainName)))
+			g <- int64(maxLagSeconds)
 		}
 
 		time.Sleep(time.Duration(pollInterval) * time.Second)
