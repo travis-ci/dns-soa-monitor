@@ -110,6 +110,10 @@ func processError(err error) {
 }
 
 func runDomainMonitor(domainName string, primaryServers, secondaryServers []string) {
+	// remember max serial between polls
+	maxSerial := uint32(0)
+	maxSerialPrimaryServer := ""
+
 	for {
 		log.Printf("polling %s", domainName)
 
@@ -125,9 +129,6 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 		}()
 
 		serials := getSerials(domainName, targetServers, errs)
-
-		maxSerial := uint32(0)
-		maxSerialPrimaryServer := ""
 
 		for _, primaryServer := range primaryServers {
 			primarySerial, ok := serials[primaryServer]
