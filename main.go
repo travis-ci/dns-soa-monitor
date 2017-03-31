@@ -8,21 +8,21 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/miekg/dns"
+	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
 	librato "github.com/rcrowley/go-librato"
 )
 
 var (
-	pollInterval = 60
-	m            librato.Metrics
-	debug        = false
-	errorCount   = uint64(0)
+	pollInterval     = 60
+	m                librato.Metrics
+	debug            = false
+	errorRateCounter = ratecounter.NewRateCounter(60 * time.Second)
 )
 
 func runErrorCountReporter() {
@@ -31,15 +31,15 @@ func runErrorCountReporter() {
 	}
 
 	for {
-		count := atomic.LoadUint64(&errorCount)
+		errorRate := errorRateCounter.Rate() / 60
 
 		if m != nil {
-			c := m.GetCounter(fmt.Sprintf("travis.dns-soa-monitor.errors"))
-			c <- int64(count)
+			c := m.GetCounter(fmt.Sprintf("travis.dns-soa-monitor.error_rate"))
+			c <- int64(errorRate)
 		}
 
 		if debug {
-			log.Printf("error_count=%v", errorCount)
+			log.Printf("error_rate=%v", errorRate)
 		}
 
 		time.Sleep(time.Duration(pollInterval) * time.Second)
@@ -105,7 +105,7 @@ func metricsify(s string) string {
 
 func processError(err error) {
 	log.Printf("error: %v", err)
-	atomic.AddUint64(&errorCount, 1)
+	errorRateCounter.Incr(1)
 	raven.CaptureErrorAndWait(err, nil)
 }
 

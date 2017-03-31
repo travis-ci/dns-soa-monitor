@@ -26,6 +26,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/paulbellamy/ratecounter",
+			"repository": "https://github.com/paulbellamy/ratecounter",
+			"vcs": "git",
+			"revision": "66b206d2a2d00245e34b1494fcaeef5e99041ea7",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/pkg/errors",
 			"repository": "https://github.com/pkg/errors",
 			"vcs": "git",
