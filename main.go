@@ -22,6 +22,7 @@ import (
 var (
 	pollInterval     = 60
 	m                librato.Metrics
+	mLock            sync.Mutex
 	debug            = false
 	errorRateCounter = ratecounter.NewRateCounter(60 * time.Second)
 )
@@ -35,7 +36,9 @@ func runErrorCountReporter(ctx context.Context) {
 		errorRate := errorRateCounter.Rate() / 60
 
 		if m != nil {
+			mLock.Lock()
 			c := m.GetCounter(fmt.Sprintf("travis.dns-soa-monitor.error_rate"))
+			mLock.Unlock()
 			c <- int64(errorRate)
 		}
 
@@ -172,7 +175,9 @@ func runDomainMonitor(ctx context.Context, domainName string, primaryServers, se
 			}
 
 			if m != nil {
+				mLock.Lock()
 				g := m.GetGauge(fmt.Sprintf("travis.dns-soa-monitor.%s.primary.%s.secondary.%s.lag_seconds", metricsify(domainName), metricsify(maxSerialPrimaryServer), metricsify(secondaryServer)))
+				mLock.Unlock()
 				g <- int64(lagSeconds)
 			}
 
@@ -186,7 +191,9 @@ func runDomainMonitor(ctx context.Context, domainName string, primaryServers, se
 		}
 
 		if m != nil {
+			mLock.Lock()
 			g := m.GetGauge(fmt.Sprintf("travis.dns-soa-monitor.%s.max_lag_seconds", metricsify(domainName)))
+			mLock.Unlock()
 			g <- int64(maxLagSeconds)
 		}
 
