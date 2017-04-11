@@ -115,8 +115,6 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 	maxSerialPrimaryServer := ""
 
 	for {
-		log.Printf("polling %s", domainName)
-
 		targetServers := []string{}
 		targetServers = append(targetServers, primaryServers...)
 		targetServers = append(targetServers, secondaryServers...)
