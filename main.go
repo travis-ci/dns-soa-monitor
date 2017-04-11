@@ -84,7 +84,7 @@ func getSerials(domainName string, targetServers []string, errs chan<- error) ma
 			defer wg.Done()
 			serial, err := getSerial(domainName, server)
 			if err != nil {
-				processError(err)
+				errs <- err
 				return
 			}
 			mutex.Lock()
