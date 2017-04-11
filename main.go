@@ -46,7 +46,7 @@ func runErrorCountReporter(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			// context cancel
-			if err := ctx.Err(); err != nil {
+			if err := ctx.Err(); err != context.Canceled {
 				processError(err)
 			}
 			return
@@ -193,7 +193,7 @@ func runDomainMonitor(ctx context.Context, domainName string, primaryServers, se
 		select {
 		case <-ctx.Done():
 			// context cancel
-			if err := ctx.Err(); err != nil {
+			if err := ctx.Err(); err != context.Canceled {
 				processError(err)
 			}
 			return
