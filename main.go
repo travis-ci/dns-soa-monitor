@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -25,7 +26,7 @@ var (
 	errorRateCounter = ratecounter.NewRateCounter(60 * time.Second)
 )
 
-func runErrorCountReporter() {
+func runErrorCountReporter(ctx context.Context) {
 	if m == nil && !debug {
 		return
 	}
@@ -42,7 +43,16 @@ func runErrorCountReporter() {
 			log.Printf("error_rate=%v", errorRate)
 		}
 
-		time.Sleep(time.Duration(pollInterval) * time.Second)
+		select {
+		case <-ctx.Done():
+			// context cancel
+			if err := ctx.Err(); err != nil {
+				processError(err)
+			}
+			return
+		case <-time.NewTimer(time.Duration(pollInterval) * time.Second).C:
+			// noop
+		}
 	}
 }
 
@@ -109,7 +119,7 @@ func processError(err error) {
 	raven.CaptureErrorAndWait(err, nil)
 }
 
-func runDomainMonitor(domainName string, primaryServers, secondaryServers []string) {
+func runDomainMonitor(ctx context.Context, domainName string, primaryServers, secondaryServers []string) {
 	// remember max serial between polls
 	maxSerial := uint32(0)
 	maxSerialPrimaryServer := ""
@@ -180,7 +190,16 @@ func runDomainMonitor(domainName string, primaryServers, secondaryServers []stri
 			g <- int64(maxLagSeconds)
 		}
 
-		time.Sleep(time.Duration(pollInterval) * time.Second)
+		select {
+		case <-ctx.Done():
+			// context cancel
+			if err := ctx.Err(); err != nil {
+				processError(err)
+			}
+			return
+		case <-time.NewTimer(time.Duration(pollInterval) * time.Second).C:
+			// noop
+		}
 	}
 }
 
@@ -246,14 +265,18 @@ func main() {
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	debug = os.Getenv("DEBUG") == "true"
 
-	go raven.CapturePanicAndWait(runErrorCountReporter, nil)
+	go raven.CapturePanicAndWait(func() {
+		runErrorCountReporter(ctx)
+	}, nil)
 
 	for _, domainName := range domainNames {
 		go func(domainName string, primaryServers, secondaryServers []string) {
 			raven.CapturePanicAndWait(func() {
-				runDomainMonitor(domainName, primaryServers, secondaryServers)
+				runDomainMonitor(ctx, domainName, primaryServers, secondaryServers)
 			}, nil)
 		}(domainName, primaryServers, secondaryServers)
 	}
@@ -261,4 +284,9 @@ func main() {
 	exitSignal := make(chan os.Signal)
 	signal.Notify(exitSignal, syscall.SIGINT, syscall.SIGTERM)
 	<-exitSignal
+
+	log.Print("shutting down gracefully")
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelTimeout()
+	cancel()
 }
